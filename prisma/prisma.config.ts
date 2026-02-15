@@ -1,10 +1,15 @@
 import 'dotenv/config'
-import type { PrismaConfig } from "prisma";
+import { defineConfig } from 'prisma/config'
 
-export default {
-  schema: "prisma/schema.prisma",
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+
   migrations: {
-    path: "prisma/migrations",
+    path: 'prisma/migrations',
     seed: 'tsx prisma/seed.ts',
-  }
-} satisfies PrismaConfig;
+  },
+
+  
+
+
+})

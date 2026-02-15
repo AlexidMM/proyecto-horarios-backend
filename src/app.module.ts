@@ -12,6 +12,8 @@ import { MateriasModule } from './materias/materias.module';
 import { PythonModule } from './python/python.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { CarrerasModule } from './carreras/carreras.module';
+import { PostsController } from './posts/posts.controller';
+import { PostsModule } from './posts/posts.module';
 
 
 @Module({
@@ -39,6 +41,8 @@ PrismaModule,
     PythonModule,
     SchedulerModule,
     CarrerasModule,
+    PostsModule,
   ],
+  controllers: [PostsController],
 })
 export class AppModule {}

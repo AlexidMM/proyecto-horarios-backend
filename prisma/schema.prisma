@@ -1,6 +1,5 @@
 generator client {
-  provider   = "prisma-client-js"
-
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -90,78 +89,68 @@ model salones {
 }
 
 model users {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String    @unique
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String           @unique
   password_hash String
   full_name     String?
-  role          String?   @default("user")
-  created_at    DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
-  metadata      Json?     @default("{}")
+  role          String?          @default("user")
+  created_at    DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?        @default(now()) @db.Timestamptz(6)
+  metadata      Json?            @default("{}")
   area_id       Int?
-  activo        Boolean?  @default(true)
-  areas         areas?    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  activo        Boolean?         @default(true)
+  comments      post_comments[]
+  reactions     post_reactions[]
+  posts         posts[]
+  areas         areas?           @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model posts {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   titulo        String
   descripcion   String
   imagen_url    String?
-  
-  creator_id    String   @db.Uuid
-  creator       users    @relation(fields: [creator_id], references: [id])
-
-  score         Int      @default(0)
-  upvotes       Int      @default(0)
-  downvotes     Int      @default(0)
-  comment_count Int      @default(0)
-  view_count    Int      @default(0)
-
-  status        String   @default("active") // active | expired | hidden
-  expires_at    DateTime? @db.Timestamptz(6)
-
-  deleted       Boolean  @default(false)
-
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime @updatedAt @db.Timestamptz(6)
-
-  reactions     post_reactions[]
+  creator_id    String           @db.Uuid
+  score         Int              @default(0)
+  upvotes       Int              @default(0)
+  downvotes     Int              @default(0)
+  comment_count Int              @default(0)
+  view_count    Int              @default(0)
+  status        String           @default("active")
+  expires_at    DateTime?        @db.Timestamptz(6)
+  deleted       Boolean          @default(false)
+  created_at    DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
   comments      post_comments[]
+  reactions     post_reactions[]
+  creator       users            @relation(fields: [creator_id], references: [id], onUpdate: NoAction, map: "fk_posts_creator")
 
-
-  @@index([created_at])
-  @@index([expires_at])
-  @@index([score, created_at])
+  @@index([created_at], map: "idx_posts_created_at")
+  @@index([expires_at], map: "idx_posts_expires_at")
+  @@index([score, created_at], map: "idx_posts_score_created_at")
 }
 
 model post_comments {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  post_id   String   @db.Uuid
-  post      posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
-
-  user_id   String   @db.Uuid
-  user      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  content   String
-  score     Int      @default(0)
-
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  post_id    String   @db.Uuid
+  user_id    String   @db.Uuid
+  content    String
+  score      Int      @default(0)
   created_at DateTime @default(now()) @db.Timestamptz(6)
+  post       posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comments_post")
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comments_user")
 }
 
 model post_reactions {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  post_id   String   @db.Uuid
-  post      posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
-
-  user_id   String   @db.Uuid
-  user      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  tipo      String   // "up" | "down"
-
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  post_id    String   @db.Uuid
+  user_id    String   @db.Uuid
+  tipo       String
   created_at DateTime @default(now()) @db.Timestamptz(6)
+  post       posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reactions_post")
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reactions_user")
 
-  @@unique([post_id, user_id])
+  @@unique([post_id, user_id], map: "unique_post_user")
 }
 
 model areas {
