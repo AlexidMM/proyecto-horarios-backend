@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { BadRequestException } from '@nestjs/common';
-import { validate as isUUID } from 'uuid';
+const uuidModulePromise = import('uuid');
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -33,6 +33,7 @@ export class MateriasService {
     return { hash };
   }
     async findById(id: string) {
+    const { validate: isUUID } = await uuidModulePromise;
     if (!isUUID(id)) {
       throw new BadRequestException('El id proporcionado no es un UUID válido');
     }

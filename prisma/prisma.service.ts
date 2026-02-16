@@ -1,6 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-
 import { PrismaNeon } from '@prisma/adapter-neon';
 
 @Injectable()
@@ -9,11 +8,21 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    const adapter = new PrismaNeon({
-      connectionString: process.env.DATABASE_URL!,
-    });
+    const connectionString = process.env.DATABASE_URL || '';
+    const useNeon =
+      process.env.USE_NEON === 'true' ||
+      connectionString.includes('neon.tech') ||
+      connectionString.includes('neon');
 
-    super({ adapter });
+    if (useNeon) {
+      const adapter = new PrismaNeon({
+        connectionString,
+      });
+
+      super({ adapter });
+    } else {
+      super();
+    }
   }
 
   async onModuleInit() {
