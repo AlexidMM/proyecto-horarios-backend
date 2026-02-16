@@ -14,6 +14,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { CarrerasModule } from './carreras/carreras.module';
 import { PostsController } from './posts/posts.controller';
 import { PostsModule } from './posts/posts.module';
+import { PsicologosModule } from './psicologos/psicologos.module';
 
 
 @Module({
@@ -42,7 +43,8 @@ PrismaModule,
     SchedulerModule,
     CarrerasModule,
     PostsModule,
+    PsicologosModule,
   ],
-  controllers: [PostsController],
+  
 })
 export class AppModule {}
