@@ -90,9 +90,9 @@ async loginAdmin(@Body() body: { email: string; password: string }) {
   
   @Post('register')
   async create(@Body() body: { email: string; passwordHash: string; fullName?: string; role?: string; metadata?: object }) {
-    if (!body.email.endsWith('@uteq.edu.mx')) {
-      return { error: 'Solo se permiten correos institucionales (@uteq.edu.mx)' };
-    }
+    // if (!body.email.endsWith('@uteq.edu.mx')) {
+    //   return { error: 'error' };
+    // }
     // Validar si el email ya existe
     const exists = await this.usersService.findByEmail(body.email);
     if (exists) {

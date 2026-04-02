@@ -15,6 +15,7 @@ import { CarrerasModule } from './carreras/carreras.module';
 import { PostsController } from './posts/posts.controller';
 import { PostsModule } from './posts/posts.module';
 import { PsicologosModule } from './psicologos/psicologos.module';
+import { IntegracionModule } from './integracion/integracion.module';
 
 
 @Module({
@@ -44,6 +45,7 @@ PrismaModule,
     CarrerasModule,
     PostsModule,
     PsicologosModule,
+    IntegracionModule,
   ],
   
 })
