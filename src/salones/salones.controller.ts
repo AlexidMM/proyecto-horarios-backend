@@ -5,12 +5,12 @@ import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorador';
 
 @Controller('salones')
-// @UseGuards(AuthGuard('jwt'), RolesGuard) // Protege todo el controlador
+@UseGuards(AuthGuard('jwt'), RolesGuard) // Protege todo el controlador
 export class SalonesController {
   constructor(private readonly salonesService: SalonesService) {}
 
   @Get()
-  // @Roles('administrador') // Solo admins
+  @Roles('administrador') // Solo admins
   async getAll() {
     return this.salonesService.findAll();
   }
