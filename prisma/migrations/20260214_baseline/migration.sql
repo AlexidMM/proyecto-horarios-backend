@@ -76,6 +76,7 @@ CREATE TABLE "profesores" (
     "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
     "min_hora" INTEGER,
+    "max_hora" INTEGER,
     "area_id" INTEGER,
 
     CONSTRAINT "profesores_pkey" PRIMARY KEY ("profesor_id")

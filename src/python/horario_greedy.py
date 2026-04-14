@@ -8,6 +8,22 @@ SLOTS_PER_DAY = 5
 DAYS = ["Lun", "Mar", "Mie", "Jue", "Vie"]
 SLOTS = [f"{d}{17+i}" for d in DAYS for i in range(SLOTS_PER_DAY)]
 
+
+def slot_hour(slot: str) -> int:
+    return int(slot[3:])
+
+
+def can_use_slot_for_subject(subject: dict, slot: str) -> bool:
+    hour = slot_hour(slot)
+    min_hora = subject.get("min_hora")
+    max_hora = subject.get("max_hora")
+
+    if min_hora is not None and hour < int(min_hora):
+        return False
+    if max_hora is not None and hour > int(max_hora):
+        return False
+    return True
+
 # Permitir pasar la ruta de SUBJECTS como argumento
 if len(sys.argv) > 1:
     with open(sys.argv[1], encoding="utf-8") as f:
@@ -63,6 +79,8 @@ def run_greedy():
             materias_disponibles = [subj for subj in SUBJECTS[g] if grupo_materia_horas[(g, subj["id"])] > 0]
             opciones = []
             for materia in materias_disponibles:
+                if not can_use_slot_for_subject(materia, slot):
+                    continue
                 prof = materia["profs"][0]
                 room = materia["rooms"][0]
                 profe_ya_dio = any(a["prof"] == prof and a["group"] == g and a["start"].startswith(dia) for a in asignaciones)

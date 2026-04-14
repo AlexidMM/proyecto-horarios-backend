@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 
 @Injectable()
@@ -18,13 +18,17 @@ export class GruposService {
 
     async create(data: {
         nombre: string;
-        division: string;
-        carrera: string;
+        division?: string;
+        carrera?: string;
         data?: object;
         grado: number;
     }) {
         return this.prisma.grupos.create({
-            data,
+            data: {
+                ...data,
+                division: data.division?.trim() || 'General',
+                carrera: data.carrera?.trim() || 'General',
+            },
         });
     }
 
@@ -37,7 +41,11 @@ export class GruposService {
     }>) {
         return this.prisma.grupos.update({
             where: { id },
-            data,
+            data: {
+                ...data,
+                ...(data.division !== undefined ? { division: data.division || 'General' } : {}),
+                ...(data.carrera !== undefined ? { carrera: data.carrera || 'General' } : {}),
+            },
         });
     }
 
@@ -47,3 +55,4 @@ export class GruposService {
         });
     }
 }
+

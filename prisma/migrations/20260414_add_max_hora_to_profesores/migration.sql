@@ -1,0 +1,2 @@
+ALTER TABLE "profesores"
+ADD COLUMN IF NOT EXISTS "max_hora" INTEGER;

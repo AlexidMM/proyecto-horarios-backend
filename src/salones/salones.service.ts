@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 
 @Injectable()
@@ -23,11 +23,14 @@ export class SalonesService {
 
     async create(data: {
         nombre: string;
-        data: object;
-        division: string;
+        data?: object;
+        division?: string;
     }) {
         return this.prisma.salones.create({
-            data,
+            data: {
+                ...data,
+                division: data.division?.trim() || 'General',
+            },
         });
     }
 
@@ -38,7 +41,10 @@ export class SalonesService {
     }>) {
         return this.prisma.salones.update({
             where: { id },
-            data,
+            data: {
+                ...data,
+                ...(data.division !== undefined ? { division: data.division || 'General' } : {}),
+            },
         });
     }
 
@@ -48,3 +54,4 @@ export class SalonesService {
         });
     }
 }
+

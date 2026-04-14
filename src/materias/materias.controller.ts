@@ -29,14 +29,21 @@ export class MateriasController {
   }
 
   @Post()
-  async create(@Body() body: { nombre: string; data?: object, grado: number , carrera: string, horas_semana: number, salones?: object }) {
-    return this.materiasService.create(body);
+  async create(
+    @Req() req,
+    @Body() body: { nombre: string; data?: object, grado: number , carrera?: string, horas_semana: number, salones?: object }
+  ) {
+    const areaId = req.user?.areaId;
+    return this.materiasService.create({
+      ...body,
+      area_id: areaId,
+    });
   }
 
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() body: Partial<{ nombre: string; data?: object, grado: number, carrera: string, horas_semana: number, salones?: object }>
+    @Body() body: Partial<{ nombre: string; data?: object, grado: number, carrera?: string, horas_semana: number, salones?: object }>
   ) {
     return this.materiasService.update(id, body);
   }

@@ -16,14 +16,14 @@ export class GruposController {
   }
 
   @Post()
-  async create(@Body() body: { nombre: string; division: string; data?: object; grado: number, carrera: string}) {
+  async create(@Body() body: { nombre: string; division?: string; data?: object; grado: number, carrera?: string}) {
     return this.gruposService.create(body);
   }
 
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() body: Partial<{ nombre: string; division: string; data?: object; grado: number, carrera: string }>
+    @Body() body: Partial<{ nombre: string; division?: string; data?: object; grado: number, carrera?: string }>
   ) {
     return this.gruposService.update(id, body);
   }

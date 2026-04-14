@@ -3,7 +3,6 @@ import { ProfesoresService } from './profesores.service';
 import { Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { RolesGuard } from '../auth/roles/roles.guard';
-import { get } from 'http';
 
 
   
@@ -37,11 +36,10 @@ export class ProfesoresController {
   async create(@Body() body: {
     nombre: string;
     apellidos: string;
-    email: string;
-    can_be_tutor?: boolean;
     materias?: object;
     metadata?: object;
-    min_hora: number;
+    min_hora?: number;
+    max_hora?: number;
   }) {
     return this.profesoresService.create(body);
   }
@@ -52,11 +50,10 @@ export class ProfesoresController {
     @Body() body: Partial<{
       nombre: string;
       apellidos: string;
-      email: string;
-      can_be_tutor?: boolean;
       materias?: object;
       metadata?: object;
       min_hora: number;
+      max_hora: number;
     }>
   ) {
     return this.profesoresService.update(profesor_id, body);

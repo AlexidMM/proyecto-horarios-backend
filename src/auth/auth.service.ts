@@ -30,13 +30,24 @@ export class AuthService {
       sub: user.id,
       areaId: user.area_id,
       nombre: user.full_name,
+      role: user.role,
+      email: user.email,
+      metadata: user.metadata,
     };
 
+    const signedToken = this.jwtService.sign(payload);
+
     return {
-      token: this.jwtService.sign(payload),
+      access_token: signedToken,
+      token: signedToken,
       user: {
-        nombre: user.full_name,
-        areaId: user.area_id,
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+        metadata: user.metadata,
+        area_id: user.area_id,
+        activo: user.activo,
       },
     };
   }

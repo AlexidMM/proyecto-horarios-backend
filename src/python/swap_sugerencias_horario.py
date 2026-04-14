@@ -19,6 +19,10 @@ SLOTS_PER_DAY = 5
 DAYS = ["Lun", "Mar", "Mie", "Jue", "Vie"]
 SLOTS = [f"{d}{17+i}" for d in DAYS for i in range(SLOTS_PER_DAY)]
 
+
+def slot_hour(slot: str) -> int:
+    return int(slot[3:])
+
 # Permitir pasar la ruta de SUBJECTS como argumento
 if len(sys.argv) > 1:
     with open(sys.argv[1], encoding="utf-8") as f:
@@ -60,6 +64,13 @@ def get_prof_room(materia, grupo):
             return subj["profs"][0], subj["rooms"][0]
     return None, None
 
+
+def get_subject_config(materia, grupo):
+    for subj in SUBJECTS[grupo]:
+        if subj["id"] == materia:
+            return subj
+    return None
+
 def profe_ya_dio_en_dia(asignaciones, grupo, prof, slot):
     dia = slot[:3]
     return any(a["prof"] == prof and a["group"] == grupo and a["start"].startswith(dia) for a in asignaciones)
@@ -80,6 +91,16 @@ def prof_room_libres(asignaciones, prof, room, slot):
     return not any((a["prof"] == prof or a["room"] == room) and a["start"] == slot for a in asignaciones)
 
 def puede_asignar(asignaciones, grupo, materia, prof, room, slot):
+    subject = get_subject_config(materia, grupo)
+    if subject:
+        hour = slot_hour(slot)
+        min_hora = subject.get("min_hora")
+        max_hora = subject.get("max_hora")
+        if min_hora is not None and hour < int(min_hora):
+            return False
+        if max_hora is not None and hour > int(max_hora):
+            return False
+
     if not slot_libre(asignaciones, grupo, slot):
         return False
     if not prof_room_libres(asignaciones, prof, room, slot):
