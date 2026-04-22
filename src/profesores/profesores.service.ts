@@ -99,12 +99,20 @@ export class ProfesoresService {
 
         const { max_hora, ...dataWithoutMaxHora } = data;
 
-        const created = await this.prisma.profesores.create({
-            data: {
-                ...dataWithoutMaxHora,
-                email: data.email?.trim() || buildFallbackEmail(data.nombre, data.apellidos),
-            },
-        });
+        let created;
+        try {
+            created = await this.prisma.profesores.create({
+                data: {
+                    ...dataWithoutMaxHora,
+                    email: data.email?.trim() || buildFallbackEmail(data.nombre, data.apellidos),
+                },
+            });
+        } catch (error: any) {
+            if (error?.code === 'P2002') {
+                throw new BadRequestException('Ya existe un profesor con ese correo');
+            }
+            throw error;
+        }
 
         if (max_hora !== undefined && await this.hasMaxHoraColumn()) {
             await this.prisma.$executeRaw`
@@ -135,15 +143,23 @@ export class ProfesoresService {
 
         const { max_hora, ...dataWithoutMaxHora } = data;
 
-        const updated = await this.prisma.profesores.update({
-            where: { profesor_id: id },
-            data: {
-                ...dataWithoutMaxHora,
-                ...(data.nombre || data.apellidos ? {
-                    email: data.email?.trim() || buildFallbackEmail(data.nombre ?? '', data.apellidos ?? ''),
-                } : {}),
-            },
-        });
+        let updated;
+        try {
+            updated = await this.prisma.profesores.update({
+                where: { profesor_id: id },
+                data: {
+                    ...dataWithoutMaxHora,
+                    ...(data.nombre || data.apellidos ? {
+                        email: data.email?.trim() || buildFallbackEmail(data.nombre ?? '', data.apellidos ?? ''),
+                    } : {}),
+                },
+            });
+        } catch (error: any) {
+            if (error?.code === 'P2002') {
+                throw new BadRequestException('Ya existe un profesor con ese correo');
+            }
+            throw error;
+        }
 
         if (max_hora !== undefined && await this.hasMaxHoraColumn()) {
             await this.prisma.$executeRaw`

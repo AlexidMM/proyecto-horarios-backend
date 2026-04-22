@@ -25,6 +25,4 @@ export class User {
 
   @Column({ type: 'json', nullable: true, default: () => "'{}'" })
   metadata?: object;
-  @Column({ name: 'area_id', type: 'int', nullable: true })
-  area_id?: number;
 }

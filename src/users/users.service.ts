@@ -38,7 +38,6 @@ export class UsersService {
     fullName?: string;
     role?: string;
     metadata?: object;
-    area_id?: number;
   }) {
     return this.prisma.users.create({
       data: {
@@ -47,7 +46,6 @@ export class UsersService {
         full_name: data.fullName,
         role: data.role,
         metadata: data.metadata,
-        area_id: data.area_id,
       },
     });
   }
@@ -58,7 +56,6 @@ export class UsersService {
     fullName?: string;
     role?: string;
     metadata?: object;
-    area_id?: number;
   }>) {
     return this.prisma.users.update({
       where: { id },
@@ -68,7 +65,6 @@ export class UsersService {
         full_name: data.fullName,
         role: data.role,
         metadata: data.metadata,
-        area_id: data.area_id,
       },
     });
   }

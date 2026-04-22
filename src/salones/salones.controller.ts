@@ -23,8 +23,8 @@ export class SalonesController {
 
   @Post()
   // @Roles('administrador')
-  async create(@Body() body: { nombre: string; data?: object; division?: string }) {
-    const exists = await this.salonesService.findByNombreYEdificio(body.nombre);
+  async create(@Body() body: { nombre: string; edificio_id: string; capacidad?: number; data?: object }) {
+    const exists = await this.salonesService.findByNombreYEdificio(body.nombre, body.edificio_id);
     if (exists) {
       return { error: 'Ya existe un salón con ese nombre.' };
     }
@@ -35,7 +35,7 @@ export class SalonesController {
   // @Roles('administrador')
   async update(
     @Param('id') id: string,
-    @Body() body: Partial<{ nombre: string; data?: object; division?: string }>,
+    @Body() body: Partial<{ nombre: string; edificio_id: string; capacidad?: number; data?: object }>,
   ) {
     return this.salonesService.update(id, body);
   }

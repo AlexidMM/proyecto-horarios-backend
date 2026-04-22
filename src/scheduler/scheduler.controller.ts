@@ -6,8 +6,15 @@ export class SchedulerController {
   constructor(private readonly schedulerService: SchedulerService) {}
 
   @Post('generate')
-  async generateSchedule(@Body() body: { grado?: number }) {
-    const result = await this.schedulerService.generateSchedule(body?.grado);
+  async generateSchedule(
+    @Body()
+    body: {
+      grado?: number | string;
+      grupos?: string[];
+      materias?: string[];
+    },
+  ) {
+    const result = await this.schedulerService.generateSchedule(body);
     return { result };
   } 
   @Get('allschedules')
@@ -19,5 +26,21 @@ export class SchedulerController {
   async getSubjectsSchedules() {
     const subjectsSchedules = await this.schedulerService.getSubjectsFormatted();
     return  subjectsSchedules ;
+  }
+
+  @Post('manual-move')
+  async moveClassManual(
+    @Body()
+    body: {
+      groupName: string;
+      fromStart: string;
+      toStart: string;
+      subject: string;
+      professor: string;
+      room: string;
+    },
+  ) {
+    const result = await this.schedulerService.moveClassManual(body);
+    return { result };
   }
 }

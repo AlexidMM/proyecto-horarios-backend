@@ -7,27 +7,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model carreras {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre     String
-  division   String
-  data       Json?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  grado      Int
-  area_id    Int?
-  areas      areas?    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model edificios {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre      String    @unique
+  descripcion String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @default(now()) @db.Timestamptz(6)
+  salones     salones[]
+}
+
+model salones {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre      String
+  edificio_id String     @db.Uuid
+  capacidad   Int        @default(35)
+  data        Json?      @default("{}")
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  edificio    edificios  @relation(fields: [edificio_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([nombre, edificio_id], map: "salones_nombre_edificio_key")
 }
 
 model grupos {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre     String
-  grado      Int
-  carrera    String
-  division   String
-  data       Json?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  area_id    Int?
-  areas      areas?    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String    @unique
+  grado         Int
+  limite_alumnos Int      @default(35)
+  data          Json?     @default("{}")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  alumnos       alumnos[]
+}
+
+model alumnos {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre            String
+  direccion         String?
+  telefono_contacto String?
+  email_contacto    String?
+  grupo_id          String?   @db.Uuid
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+  grupo             grupos?   @relation(fields: [grupo_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([grupo_id], map: "idx_alumnos_grupo")
 }
 
 model horarios {
@@ -36,8 +60,6 @@ model horarios {
   data        Json
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
   updated_at  DateTime? @default(now()) @db.Timestamptz(6)
-  area_id     Int?
-  areas       areas?    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model horarios_profes {
@@ -51,22 +73,23 @@ model horarios_profes {
 model materias {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nombre       String
-  carrera      String
   grado        Int
-  data         Json?
+  data         Json?     @default("{}")
   created_at   DateTime? @default(now()) @db.Timestamptz(6)
   updated_at   DateTime? @default(now()) @db.Timestamptz(6)
   horas_semana Int
+  permitir_doble_bloque Boolean @default(false)
   salones      Json?     @default("[]")
-  area_id      Int?
-  areas        areas?    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([nombre, grado], map: "materias_nombre_grado_key")
+  @@index([grado], map: "idx_materias_grado")
 }
 
 model profesores {
   profesor_id  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nombre       String
   apellidos    String
-  email        String
+  email        String    @unique
   can_be_tutor Boolean?  @default(false)
   materias     Json?     @default("[]")
   metadata     Json?     @default("{}")
@@ -74,106 +97,16 @@ model profesores {
   updated_at   DateTime? @default(now()) @db.Timestamptz(6)
   min_hora     Int?
   max_hora     Int?
-  area_id      Int?
-  areas        areas?    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model salones {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre     String
-  data       Json?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  division   String
-  area_id    Int?
-  areas      areas?    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model users {
-  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String           @unique
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String    @unique
   password_hash String
   full_name     String?
-  role          String?          @default("user")
-  created_at    DateTime?        @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime?        @default(now()) @db.Timestamptz(6)
-  metadata      Json?            @default("{}")
-  area_id       Int?
-  activo        Boolean?         @default(true)
-  comments      post_comments[]
-  reactions     post_reactions[]
-  posts         posts[]
-  areas         areas?           @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model posts {
-  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  titulo        String
-  descripcion   String
-  imagen_url    String?
-  creator_id    String           @db.Uuid
-  score         Int              @default(0)
-  upvotes       Int              @default(0)
-  downvotes     Int              @default(0)
-  comment_count Int              @default(0)
-  view_count    Int              @default(0)
-  status        String           @default("active")
-  expires_at    DateTime?        @db.Timestamptz(6)
-  deleted       Boolean          @default(false)
-  created_at    DateTime         @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
-  comments      post_comments[]
-  reactions     post_reactions[]
-  creator       users            @relation(fields: [creator_id], references: [id], onUpdate: NoAction, map: "fk_posts_creator")
-
-  @@index([created_at], map: "idx_posts_created_at")
-  @@index([expires_at], map: "idx_posts_expires_at")
-  @@index([score, created_at], map: "idx_posts_score_created_at")
-}
-
-model post_comments {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  post_id    String   @db.Uuid
-  user_id    String   @db.Uuid
-  content    String
-  score      Int      @default(0)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  post       posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comments_post")
-  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comments_user")
-}
-
-model post_reactions {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  post_id    String   @db.Uuid
-  user_id    String   @db.Uuid
-  tipo       String
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  post       posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reactions_post")
-  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reactions_user")
-
-  @@unique([post_id, user_id], map: "unique_post_user")
-}
-
-model areas {
-  id         Int          @id @default(autoincrement())
-  nombre     String       @unique
-  carreras   carreras[]
-  grupos     grupos[]
-  horarios   horarios[]
-  materias   materias[]
-  profesores profesores[]
-  salones    salones[]
-  users      users[]
-}
-
-model psicologos{
-  psicologo_id   String    @id(map: "psicologo_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre         String
-  apellidos      String
-  email          String
-  disponibilidad Json
-  metadata       Json?     @default("{}")
-  created_at     DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
-  area_id        Int?
+  role          String?   @default("user")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  metadata      Json?     @default("{}")
+  activo        Boolean?  @default(true)
 }

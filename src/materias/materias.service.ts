@@ -8,6 +8,14 @@ import * as crypto from 'crypto';
 export class MateriasService {
     constructor(private prisma: PrismaService) {}
 
+  private normalizeGrade(grado: number) {
+    const parsed = Number(grado);
+    if (![1, 2, 3].includes(parsed)) {
+      throw new BadRequestException('El grado debe ser 1, 2 o 3');
+    }
+    return parsed;
+  }
+
   private normalizeSalones(salones: unknown) {
     if (Array.isArray(salones)) {
       return salones;
@@ -19,19 +27,13 @@ export class MateriasService {
   }
 
     async findAll() {
-        return this.prisma.materias.findMany();
+        return this.prisma.materias.findMany({
+          orderBy: [
+            { grado: 'asc' },
+            { nombre: 'asc' },
+          ],
+        });
     }
-
-    async findByArea(areaId: number) {
-    return this.prisma.materias.findMany({
-      where: {
-        OR: [
-          { area_id: areaId },
-          { area_id: null },
-        ],
-      },
-    });
-  }
     
     async getHash() {
     const materias = await this.prisma.materias.findMany({
@@ -59,41 +61,59 @@ export class MateriasService {
   }
     async create(data: {
         nombre: string;
-      carrera?: string;
         data?: object;
         horas_semana: number;
         grado: number;
         salones?: object;
-      area_id?: number;
+      permitir_doble_bloque?: boolean;
     }) {
-        return this.prisma.materias.create({    
-        data: {
-          ...data,
-          carrera: data.carrera?.trim() || 'General',
-          data: data.data ?? { tipo: 'teorica' },
-          salones: this.normalizeSalones(data.salones),
-          area_id: data.area_id,
-        },
-        });
+        const grado = this.normalizeGrade(data.grado);
+
+        try {
+          return await this.prisma.materias.create({
+            data: {
+              ...data,
+              grado,
+              data: data.data ?? { tipo: 'teorica' },
+              permitir_doble_bloque: Boolean(data.permitir_doble_bloque),
+              salones: this.normalizeSalones(data.salones),
+            },
+          });
+        } catch (error: any) {
+          if (error?.code === 'P2002') {
+            throw new BadRequestException('Ya existe una materia con ese nombre para ese grado');
+          }
+          throw error;
+        }
     }
 
     async update(id: string, data: Partial<{
         nombre: string;
-      carrera: string;
         data?: object;
         grado: number;
         horas_semana: number;
       salones?: object;
+      permitir_doble_bloque?: boolean;
     }>) {
-        return this.prisma.materias.update({
-            where: { id },
-        data: {
+        const payload: any = {
           ...data,
-          ...(data.carrera !== undefined ? { carrera: data.carrera || 'General' } : {}),
+          ...(data.grado !== undefined ? { grado: this.normalizeGrade(data.grado) } : {}),
           ...(data.data !== undefined ? { data: data.data ?? { tipo: 'teorica' } } : {}),
           ...(data.salones !== undefined ? { salones: this.normalizeSalones(data.salones) } : {}),
-        },
-        });
+          ...(data.permitir_doble_bloque !== undefined ? { permitir_doble_bloque: Boolean(data.permitir_doble_bloque) } : {}),
+        };
+
+        try {
+          return await this.prisma.materias.update({
+            where: { id },
+            data: payload,
+          });
+        } catch (error: any) {
+          if (error?.code === 'P2002') {
+            throw new BadRequestException('Ya existe una materia con ese nombre para ese grado');
+          }
+          throw error;
+        }
     }
     async delete(id: string) {
         return this.prisma.materias.delete({

@@ -11,11 +11,9 @@ import { AuthModule } from './auth/auth.module';
 import { MateriasModule } from './materias/materias.module';
 import { PythonModule } from './python/python.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
-import { CarrerasModule } from './carreras/carreras.module';
-import { PostsController } from './posts/posts.controller';
-import { PostsModule } from './posts/posts.module';
-import { PsicologosModule } from './psicologos/psicologos.module';
 import { IntegracionModule } from './integracion/integracion.module';
+import { AlumnosModule } from './alumnos/alumnos.module';
+import { EdificiosModule } from './edificios/edificios.module';
 
 
 @Module({
@@ -40,11 +38,10 @@ PrismaModule,
     AuthModule,
 
     MateriasModule,
+    AlumnosModule,
+    EdificiosModule,
     PythonModule,
     SchedulerModule,
-    CarrerasModule,
-    PostsModule,
-    PsicologosModule,
     IntegracionModule,
   ],
   

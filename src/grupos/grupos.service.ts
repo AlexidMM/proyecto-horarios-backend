@@ -7,45 +7,41 @@ export class GruposService {
     constructor(private prisma: PrismaService) {}
 
     async findAll() {
-        return this.prisma.grupos.findMany();
+        return this.prisma.grupos.findMany({
+            include: { _count: { select: { alumnos: true } } },
+        });
     }
 
     async findById(id: string) {
         return this.prisma.grupos.findUnique({
             where: { id },
+            include: { _count: { select: { alumnos: true } } },
         });
     }
 
     async create(data: {
         nombre: string;
-        division?: string;
-        carrera?: string;
+        limite_alumnos?: number;
         data?: object;
         grado: number;
     }) {
         return this.prisma.grupos.create({
             data: {
                 ...data,
-                division: data.division?.trim() || 'General',
-                carrera: data.carrera?.trim() || 'General',
+                limite_alumnos: data.limite_alumnos ?? 35,
             },
         });
     }
 
     async update(id: string, data: Partial<{
         nombre: string;
-        division: string;
-        carrera: string;
+        limite_alumnos: number;
         data?: object;
         grado: number;
     }>) {
         return this.prisma.grupos.update({
             where: { id },
-            data: {
-                ...data,
-                ...(data.division !== undefined ? { division: data.division || 'General' } : {}),
-                ...(data.carrera !== undefined ? { carrera: data.carrera || 'General' } : {}),
-            },
+            data,
         });
     }
 

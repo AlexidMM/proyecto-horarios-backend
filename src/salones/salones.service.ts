@@ -7,44 +7,43 @@ export class SalonesService {
     constructor(private prisma: PrismaService) {}
 
     async findAll() {
-        return this.prisma.salones.findMany();
+        return this.prisma.salones.findMany({
+            include: { edificio: true },
+        });
     }
 
     async findById(id: string) {
         return this.prisma.salones.findUnique({
             where: { id },
+            include: { edificio: true },
         });
     }
-    async findByNombreYEdificio(nombre: string) {
+    async findByNombreYEdificio(nombre: string, edificio_id: string) {
   return this.prisma.salones.findFirst({
-    where: { nombre }
+    where: { nombre, edificio_id }
   });
 }
 
     async create(data: {
         nombre: string;
+        edificio_id: string;
+        capacidad?: number;
         data?: object;
-        division?: string;
     }) {
         return this.prisma.salones.create({
-            data: {
-                ...data,
-                division: data.division?.trim() || 'General',
-            },
+            data,
         });
     }
 
     async update(id: string, data: Partial<{
         nombre: string;
+        edificio_id: string;
+        capacidad: number;
         data: object;
-        division: string;
     }>) {
         return this.prisma.salones.update({
             where: { id },
-            data: {
-                ...data,
-                ...(data.division !== undefined ? { division: data.division || 'General' } : {}),
-            },
+            data,
         });
     }
 

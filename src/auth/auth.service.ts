@@ -28,7 +28,6 @@ export class AuthService {
 
     const payload = {
       sub: user.id,
-      areaId: user.area_id,
       nombre: user.full_name,
       role: user.role,
       email: user.email,
@@ -46,7 +45,6 @@ export class AuthService {
         full_name: user.full_name,
         role: user.role,
         metadata: user.metadata,
-        area_id: user.area_id,
         activo: user.activo,
       },
     };

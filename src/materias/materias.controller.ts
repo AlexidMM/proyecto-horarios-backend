@@ -12,10 +12,8 @@ export class MateriasController {
   constructor(private readonly materiasService: MateriasService) {}
 
   @Get()
-  async getAll(@Req() req) {
-    // return this.materiasService.findAll();
-     const areaId = req.user.areaId; // 🔥
-  return this.materiasService.findByArea(areaId);
+  async getAll() {
+    return this.materiasService.findAll();
   }
    
   @Get('hash')
@@ -30,20 +28,15 @@ export class MateriasController {
 
   @Post()
   async create(
-    @Req() req,
-    @Body() body: { nombre: string; data?: object, grado: number , carrera?: string, horas_semana: number, salones?: object }
+    @Body() body: { nombre: string; data?: object; grado: number; horas_semana: number; salones?: object; permitir_doble_bloque?: boolean }
   ) {
-    const areaId = req.user?.areaId;
-    return this.materiasService.create({
-      ...body,
-      area_id: areaId,
-    });
+    return this.materiasService.create(body);
   }
 
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() body: Partial<{ nombre: string; data?: object, grado: number, carrera?: string, horas_semana: number, salones?: object }>
+    @Body() body: Partial<{ nombre: string; data?: object; grado: number; horas_semana: number; salones?: object; permitir_doble_bloque?: boolean }>
   ) {
     return this.materiasService.update(id, body);
   }
