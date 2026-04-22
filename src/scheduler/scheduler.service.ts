@@ -96,6 +96,15 @@ export class SchedulerService {
       FROM grupos;
     `;
 
+  const salonesCatalogo = await this.prisma.salones.findMany({
+    select: { nombre: true },
+  });
+  const validRooms = new Set(
+    salonesCatalogo
+      .map((s) => s.nombre?.trim())
+      .filter((name): name is string => Boolean(name)),
+  );
+
   const materiasMap = new Map<string, string[]>();
   const materiaMetaByGrade = new Map<string, { h: number; rooms: string[] | string; permitir_doble_bloque: boolean }>();
 
@@ -111,7 +120,7 @@ export class SchedulerService {
     if (!materiaMetaByGrade.has(key)) {
       materiaMetaByGrade.set(key, {
         h: item.h,
-        rooms: item.rooms,
+        rooms: this.normalizeRoomsAgainstCatalog(item.rooms, validRooms),
         permitir_doble_bloque: Boolean(item.permitir_doble_bloque),
       });
     }
@@ -163,6 +172,60 @@ export class SchedulerService {
     const diaCode = start.slice(0, 3);
     const bloque = start.slice(3, 5);
     return { diaCode, bloque };
+  }
+
+  private splitDayHour(start: string) {
+    const day = start.slice(0, 3);
+    const hour = Number(start.slice(3, 5));
+    return { day, hour };
+  }
+
+  private fullNameFromProfesor(p: { nombre: string; apellidos: string }) {
+    return `${p.nombre} ${p.apellidos}`.trim();
+  }
+
+  private normalizeRooms(rooms: unknown): string[] {
+    if (Array.isArray(rooms)) {
+      return rooms.map((r) => String(r)).filter(Boolean);
+    }
+    if (typeof rooms === 'string' && rooms.trim().length > 0) {
+      return [rooms.trim()];
+    }
+    return [];
+  }
+
+  private normalizeLegacyRoomName(room: string, validRooms: Set<string>): string {
+    const normalized = room.trim();
+    if (validRooms.has(normalized)) return normalized;
+
+    const legacyAulaMatch = normalized.match(/^Aula\s+(\d{1,2})$/i);
+    if (legacyAulaMatch) {
+      const roomNumber = Number(legacyAulaMatch[1]);
+      if (roomNumber >= 1 && roomNumber <= 10) {
+        const candidate = `Aula A${roomNumber}`;
+        if (validRooms.has(candidate)) return candidate;
+      }
+    }
+
+    return normalized;
+  }
+
+  private normalizeRoomsAgainstCatalog(rooms: unknown, validRooms: Set<string>): string[] {
+    const normalized = this.normalizeRooms(rooms)
+      .map((room) => this.normalizeLegacyRoomName(room, validRooms))
+      .filter((room) => validRooms.size === 0 || validRooms.has(room));
+
+    return Array.from(new Set(normalized));
+  }
+
+  private allowsSubjectInSameDay(existingStarts: string[], targetStart: string, allowDoubleBlock: boolean) {
+    if (existingStarts.length === 0) return true;
+    if (!allowDoubleBlock) return false;
+    if (existingStarts.length >= 2) return false;
+
+    const target = this.splitDayHour(targetStart).hour;
+    const current = this.splitDayHour(existingStarts[0]).hour;
+    return Math.abs(target - current) === 1;
   }
 
   async moveClassManual(payload: {
@@ -252,6 +315,131 @@ export class SchedulerService {
     return {
       message: 'Clase movida correctamente',
       groupName,
+      schedule: groupData,
+    };
+  }
+
+  async addClassManual(payload: {
+    groupName: string;
+    start: string;
+    subject: string;
+  }) {
+    const { groupName, start, subject } = payload;
+    if (!groupName || !start || !subject) {
+      throw new BadRequestException('Faltan datos para agregar la clase');
+    }
+
+    const { diaCode, bloque } = this.parseStart(start);
+    const schedules = await this.prisma.horarios.findMany();
+    const targetGroupSchedule = schedules.find((s) => s.nombregrupo === groupName);
+    if (!targetGroupSchedule || !Array.isArray(targetGroupSchedule.data)) {
+      throw new BadRequestException('No se encontró el horario del grupo');
+    }
+
+    const groupData = [...(targetGroupSchedule.data as any[])];
+    if (groupData.some((c) => c.start === start)) {
+      throw new BadRequestException('Ese bloque ya está ocupado en el grupo');
+    }
+
+    const group = await this.prisma.grupos.findFirst({ where: { nombre: groupName } });
+    if (!group) {
+      throw new BadRequestException('No se encontró información del grupo');
+    }
+
+    const materia = await this.prisma.materias.findFirst({
+      where: {
+        nombre: subject,
+        grado: group.grado,
+      },
+    });
+    if (!materia) {
+      throw new BadRequestException('La materia no existe para el grado del grupo');
+    }
+
+    const sameDayStarts = groupData
+      .filter((c) => c.subj === subject && typeof c.start === 'string' && c.start.startsWith(diaCode))
+      .map((c) => c.start);
+
+    if (!this.allowsSubjectInSameDay(sameDayStarts, start, Boolean(materia.permitir_doble_bloque))) {
+      throw new BadRequestException(
+        materia.permitir_doble_bloque
+          ? 'Esta materia solo puede repetirse el mismo día si queda en bloque consecutivo (máximo 2).'
+          : 'Esta materia no permite repetirse el mismo día en este grupo.',
+      );
+    }
+
+    const rooms = this.normalizeRooms(materia.salones);
+    if (rooms.length === 0) {
+      throw new BadRequestException('La materia no tiene salones configurados');
+    }
+
+    const profesores = await this.prisma.profesores.findMany({
+      where: {
+        materias: {
+          array_contains: [subject],
+        },
+      },
+      select: {
+        nombre: true,
+        apellidos: true,
+      },
+    });
+    if (profesores.length === 0) {
+      throw new BadRequestException('No hay profesor asignado para esta materia');
+    }
+
+    const allClasses = schedules.flatMap((s) =>
+      Array.isArray(s.data)
+        ? (s.data as any[]).map((c) => ({
+            ...c,
+            __groupName: s.nombregrupo,
+          }))
+        : [],
+    );
+
+    let selectedProfessor: string | null = null;
+    let selectedRoom: string | null = null;
+
+    for (const prof of profesores) {
+      const fullName = this.fullNameFromProfesor(prof);
+      const profBusy = allClasses.some((c) => c.start === start && c.prof === fullName);
+      if (profBusy) continue;
+
+      const roomAvailable = rooms.find((room) => !allClasses.some((c) => c.start === start && c.room === room));
+      if (!roomAvailable) continue;
+
+      selectedProfessor = fullName;
+      selectedRoom = roomAvailable;
+      break;
+    }
+
+    if (!selectedProfessor || !selectedRoom) {
+      throw new BadRequestException('No hay combinación disponible de profesor y salón para ese bloque');
+    }
+
+    const newEntry = {
+      group: groupName,
+      subj: subject,
+      prof: selectedProfessor,
+      room: selectedRoom,
+      start,
+      dia: DIA_MAP_REVERSE[diaCode] ?? diaCode,
+      bloque,
+      hora: SECONDARY_BLOCKS[bloque] ?? 'Sin horario',
+      receso: '09:30-09:50',
+    };
+
+    groupData.push(newEntry);
+
+    await this.prisma.horarios.update({
+      where: { id: targetGroupSchedule.id },
+      data: { data: groupData },
+    });
+
+    return {
+      message: 'Clase agregada correctamente en el hueco',
+      groupName,
+      added: newEntry,
       schedule: groupData,
     };
   }

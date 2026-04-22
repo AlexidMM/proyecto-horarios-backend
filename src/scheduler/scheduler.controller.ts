@@ -43,4 +43,17 @@ export class SchedulerController {
     const result = await this.schedulerService.moveClassManual(body);
     return { result };
   }
+
+  @Post('manual-add')
+  async addClassManual(
+    @Body()
+    body: {
+      groupName: string;
+      start: string;
+      subject: string;
+    },
+  ) {
+    const result = await this.schedulerService.addClassManual(body);
+    return { result };
+  }
 }
